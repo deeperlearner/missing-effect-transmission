@@ -1,0 +1,210 @@
+{
+    "n_gpu": 1,
+    "root_dir": "./",
+    "name": "transformer",
+    "cross_validation": {
+        "repeat_time": 1,
+        "k_fold": 5
+    },
+    "optuna": {
+        "n_trials": 50,
+        "is_ftn": true,
+        "module": "tune.transformer",
+        "type": "objective"
+    },
+    "datasets": {
+        "imbalanced": true,
+        "train": {
+            "data": {
+                "module": "data_loaders.ehr_dataset",
+                "type": "EHRDataset",
+                "kwargs": {
+                    "impute_method": "mean",
+                    "cat_type": "binary",
+                    "do_locf": false,
+                    "data_dir": "D:/Local/PhysionetChallenge2012",
+                    "mode": "train"
+                }
+            }
+        },
+        "valid": {
+        }
+    },
+    "data_loaders": {
+        "train": {
+            "data": {
+                "module": "data_loaders.valid_loader",
+                "type": "ValidDataLoader",
+                "kwargs": {
+                    "validation_split": 0.2,
+                    "DataLoader_kwargs": {
+                        "batch_size": 128,
+                        "shuffle": true,
+                        "num_workers": 4,
+                        "pin_memory": false
+                    },
+                    "do_transform": true
+                }
+            }
+        },
+        "valid": {
+        },
+        "test": {
+            "data": {
+                "module": "data_loaders.valid_loader",
+                "type": "ValidDataLoader",
+                "kwargs": {
+                    "validation_split": 0,
+                    "DataLoader_kwargs": {
+                        "batch_size": 128,
+                        "shuffle": false,
+                        "num_workers": 4
+                    },
+                    "do_transform": true
+                }
+            }
+        }
+    },
+    "models": {
+        "transformer": {
+            "module": "models.transformer",
+            "type": "TransformerModel",
+            "kwargs": {
+                "d_model": 144,
+                "nhead": 1,
+                "n_enc": 3,
+                "n_dec": 3,
+                "nhid": 144,
+                "dropout": 0.49735656680300977,
+                "activation": "gelu",
+                "ignore_padding": true,
+                "weight_constraint": false
+            }
+        },
+        "finetune_enc": {
+            "module": "models.transformer",
+            "type": "FinetuneModel",
+            "kwargs": {
+                "d_model": 144,
+                "nhead": 1,
+                "n_enc": 3,
+                "n_dec": 3,
+                "nhid": 144,
+                "nlayers": 3,
+                "dropout": 0.49735656680300977,
+                "activation": "gelu",
+                "ignore_padding": true,
+                "weight_constraint": false,
+                "NN_params": {
+                    "down_factor": 2,
+                    "activation": "gelu",
+                    "dropout_rate": 0.44878788217025317
+                }
+            }
+        }
+    },
+    "losses": {
+        "recon_loss": {
+            "is_ftn": true,
+            "module": "models.loss",
+            "type": "recon_loss"
+        },
+        "focal_loss": {
+            "is_ftn": true,
+            "module": "models.loss",
+            "type": "binary_focal_loss"
+        }
+    },
+    "metrics": {
+        "per_iteration": ["binary_accuracy"],
+        "per_epoch": ["TPR", "PPV", "AUROC", "AUPRC", "c_index"],
+        "pick_threshold": {
+            "is_ftn": true,
+            "module": "models.metric",
+            "type": "Youden_J",
+            "kwargs": {
+                "beta": 1.0
+            }
+        }
+    },
+    "optimizers": {
+        "transformer": {
+            "module": "torch.optim",
+            "type": "Adam",
+            "kwargs": {
+                "lr": 0.0005374592832283278,
+                "weight_decay": 0.005334922596471386
+            }
+        },
+        "finetune_enc": {
+            "module": "torch.optim",
+            "type": "Adam",
+            "kwargs": {
+                "lr": 0.00029634981270373054,
+                "weight_decay": 0.001296936216904354
+            }
+        }
+    },
+    "lr_schedulers": {
+        "transformer": {
+            "module": "torch.optim.lr_scheduler",
+            "type": "StepLR",
+            "kwargs": {
+                "step_size": 1.0,
+                "gamma": 0.95
+            }
+        },
+        "finetune_enc": {
+            "module": "torch.optim.lr_scheduler",
+            "type": "StepLR",
+            "kwargs": {
+                "step_size": 1.0,
+                "gamma": 0.95
+            }
+        }
+    },
+    "trainers": {
+        "pretrainer": {
+            "module": "trainers.transformer",
+            "type": "Pretrainer",
+            "kwargs": {
+                "apex": false,
+
+                "epochs": 10,
+                "len_epoch": null,
+
+                "save_period": 10,
+                "save_the_best": true,
+                "verbosity": 2,
+
+                "monitor": "min val_recon_loss",
+                "early_stop": 10,
+
+                "tensorboard": false
+            }
+        },
+        "finetuner": {
+            "module": "trainers.transformer",
+            "type": "Finetuner",
+            "kwargs": {
+                "apex": false,
+
+                "epochs": 50,
+                "len_epoch": null,
+
+                "save_period": 10,
+                "save_the_best": true,
+                "verbosity": 2,
+
+                "monitor": "max val_AUPRC",
+                "early_stop": 10,
+
+                "tensorboard": false
+            }
+        }
+    },
+    "tester": {
+        "module": "testers.transformer",
+        "type": "Tester"
+    }
+}

@@ -1,0 +1,92 @@
+{
+    "n_gpu": 1,
+    "root_dir": "./",
+    "name": "Tree_Based",
+    "cross_validation": {
+        "repeat_time": 1,
+        "k_fold": 5
+    },
+    "optuna": {
+        "n_trials": 50,
+        "is_ftn": true,
+        "module": "tune.tree_based",
+        "type": "objective",
+        "kwargs": {
+        }
+    },
+
+    "datasets": {
+        "imbalanced": true,
+        "last_N": null,
+        "train": {
+            "data": {
+                "module": "data_loaders.ehr_dataset",
+                "type": "EHRDataset",
+                "kwargs": {
+                    "impute_method": "mean",
+                    "do_locf": false,
+                    "data_dir": "D:/Local/PhysionetChallenge2012",
+                    "mode": "train"
+                }
+            }
+        },
+        "valid": {
+        }
+    },
+    "data_loaders": {
+        "train": {
+            "data": {
+                "module": "data_loaders.valid_loader",
+                "type": "ValidDataLoader",
+                "kwargs": {
+                    "validation_split": 0.2,
+                    "DataLoader_kwargs": {
+                        "batch_size": 128,
+                        "shuffle": true,
+                        "num_workers": 4
+                    },
+                    "do_normalize": false
+                }
+            }
+        },
+        "valid": {
+        },
+        "test": {
+            "data": {
+                "module": "data_loaders.valid_loader",
+                "type": "ValidDataLoader",
+                "kwargs": {
+                    "validation_split": 0,
+                    "DataLoader_kwargs": {
+                        "batch_size": 128,
+                        "shuffle": false,
+                        "num_workers": 4
+                    },
+                    "do_normalize": false
+                }
+            }
+        }
+    },
+    "models": {
+        "RandomForest": {
+            "module": "imblearn.ensemble",
+            "type": "BalancedRandomForestClassifier",
+            "kwargs": {
+                "n_estimators": 170,
+                "criterion": "entropy",
+                "max_depth": 22,
+                "class_weight": "balanced_subsample"
+            }
+        },
+        "XGBoost": {
+            "module": "xgboost",
+            "type": "XGBClassifier",
+            "kwargs": {
+                "use_label_encoder": false
+            }
+        }
+    },
+    "metrics": {
+        "per_epoch": ["TPR", "PPV", "AUROC", "AUPRC", "c_index"]
+    }
+}
